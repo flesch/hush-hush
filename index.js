@@ -1,32 +1,44 @@
 'use strict';
 
-import stringToRegExp from 'string-to-regexp';
+import 'babel-polyfill';
+import fos from 'filter-objects';
 
-export let features = [];
+export let list = new Map();
 
-export const feature = (id, criteria) => {
-  let feature = features.find(feature => feature.id === id);
+export const add = (id, criteria = []) => {
+  let feature = list.get(id);
   if (feature) {
     feature.criteria = [ ...feature.criteria, ...(Array.isArray(criteria) ? criteria : [criteria]) ];
   } else {
-    features.push({ id, enabled:true, criteria:(Array.isArray(criteria) ? criteria : [criteria]) });
+    list.set(id, { id, enabled:true, criteria:(Array.isArray(criteria) ? criteria : [criteria]) });
+  }
+  return list.get(id);
+};
+
+export const remove = (id, criteria) => {
+  if (typeof criteria === 'object') {
+    let feature = list.get(id);
+    let length = feature.criteria.length;
+    feature.criteria = feature.criteria.filter(set => {
+      var match = fos.makeMatchFn(Object.keys(criteria));
+      return !match(criteria, set);
+    });
+    return length !== feature.criteria.length;
+  } else {
+    return list.delete(id);
   }
 };
 
-export const toggle = (id, state = {}, callback) => {
-
-  let feature = features.find(feature => feature.id === id);
-
+export const test = (id, state = {}, callback) => {
+  let feature = list.get(id);
   if (feature) {
-    let { enabled = true, criteria } = feature;
+    let { enabled = true, criteria = [] } = feature;
     let matches = criteria.filter(set => {
-      return enabled && Object.keys(set).every(key => {
-        let expression = stringToRegExp(set[key]);
-        return expression ? expression.test(state[key]) : false;
-      });
+      let match = fos.makeMatchFn(Object.keys(set), { regExpMatch:true });
+      return match(set, state);
     });
     if (typeof callback === 'function') {
-      return callback(null, !!matches.length, Object.assign({}, feature, { enabled:!!matches.length, matches }));
+      return callback(null, !!matches.length, Object.assign({}, feature, { enabled:!!matches.length, state, matches }));
     } else {
       return !!matches.length;
     }
@@ -37,16 +49,4 @@ export const toggle = (id, state = {}, callback) => {
       return false;
     }
   }
-
 };
-
-const enable_disable = (state) => {
-  return (id) => {
-    let feature = features.find(feature => feature.id === id);
-    feature.enabled = state;
-    return feature;
-  }
-};
-
-export const enable = enable_disable(true);
-export const disable = enable_disable(false);
