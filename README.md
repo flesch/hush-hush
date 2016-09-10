@@ -68,7 +68,7 @@ Once you've defined all of your features and the criteria needed for each to be 
 
 
 ```javascript
-let state = { 
+let state = {
   environment: 'beta',
   role: 'tester',
   user: 'bbe6a53d-cee3-4562-af08-c892a4b3ca62'
@@ -115,15 +115,13 @@ This method will return a `true` if critera or feature were successfully removed
 
 ### Listing enabled features
 
-The collection of features that have been added are exposed through the `.list` property (which is an ES6 `Map`). Once, you've tested each feature, you can report which ones are enabled:
+The collection of features that have been added are exposed through the `.list` property. Once, you've tested each feature, you can report which ones are enabled:
 
 ```javascript
 let enabled = Object.keys(features.list).filter(feature => {
   return features.list[feature].enabled;
 });
 ```
-
-> :warning: Be careful using this functionality. New features added through `.add` are enabled by default, and only disabled when the criteria doesn't match the state after it's been tested.
 
 ## License
 
