@@ -1,46 +1,52 @@
 'use strict';
 
-import 'babel-polyfill';
-import fos from 'filter-objects';
+require('babel-polyfill');
 
-export let list = new Map();
+const stringToRegExp = require('string-to-regexp');
 
-export const add = (id, criteria = []) => {
-  let feature = list.get(id);
-  if (feature) {
-    feature.criteria = [ ...feature.criteria, ...(Array.isArray(criteria) ? criteria : [criteria]) ];
-  } else {
-    list.set(id, { id, enabled:true, criteria:(Array.isArray(criteria) ? criteria : [criteria]) });
-  }
-  return list.get(id);
+const list = {};
+
+const isShallowEqual = (obj1, obj2, fuzzy = true) => {
+  return Object.keys(obj1).every(key => {
+    if (fuzzy) {
+      return typeof obj1[key] === 'string' ? stringToRegExp(obj1[key]).test(obj2[key]) : obj1[key] === obj2[key];
+    }
+    return obj1[key] === obj2[key];
+  });
 };
 
-export const remove = (id, criteria) => {
+const add = (id, criteria = []) => {
+  const feature = list[id];
+  if (feature) {
+    list[id].criteria = [ ...feature.criteria, ...(Array.isArray(criteria) ? criteria : [criteria]) ];
+  } else {
+    list[id] = { id, enabled:false, criteria:(Array.isArray(criteria) ? criteria : [criteria]) };
+  }
+  return list[id];
+};
+
+const remove = (id, criteria) => {
   if (typeof criteria === 'object') {
-    let feature = list.get(id);
+    let feature = list[id];
     let length = feature.criteria.length;
-    feature.criteria = feature.criteria.filter(set => {
-      var match = fos.makeMatchFn(Object.keys(criteria));
-      return !match(criteria, set);
-    });
+    feature.criteria = feature.criteria.filter(set => !isShallowEqual(criteria, set, false));
     return length !== feature.criteria.length;
   } else {
-    return list.delete(id);
+    delete list[id];
+    return true;
   }
 };
 
-export const test = (id, state = {}, callback) => {
-  let feature = list.get(id);
+const test = (id, state = {}, callback) => {
+  let feature = list[id];
   if (feature) {
     let { enabled = true, criteria = [] } = feature;
-    let matches = criteria.filter(set => {
-      let match = fos.makeMatchFn(Object.keys(set), { regExpMatch:true });
-      return match(set, state);
-    });
+    let matches = criteria.filter(set => isShallowEqual(set, state));
+    feature.enabled = !!matches.length;
     if (typeof callback === 'function') {
-      return callback(null, !!matches.length, Object.assign({}, feature, { enabled:!!matches.length, state, matches }));
+      return callback(null, feature.enabled, Object.assign({}, feature, { state, matches }));
     } else {
-      return !!matches.length;
+      return feature.enabled;
     }
   } else {
     if (typeof callback === 'function') {
@@ -50,3 +56,5 @@ export const test = (id, state = {}, callback) => {
     }
   }
 };
+
+module.exports = { list, add, remove, test };

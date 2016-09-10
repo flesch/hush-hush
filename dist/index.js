@@ -1,55 +1,57 @@
 'use strict';
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.test = exports.remove = exports.add = exports.list = undefined;
-
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-require('babel-polyfill');
-
-var _filterObjects = require('filter-objects');
-
-var _filterObjects2 = _interopRequireDefault(_filterObjects);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-var list = exports.list = new Map();
+require('babel-polyfill');
 
-var add = exports.add = function add(id) {
-  var criteria = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
+var stringToRegExp = require('string-to-regexp');
 
-  var feature = list.get(id);
-  if (feature) {
-    feature.criteria = [].concat(_toConsumableArray(feature.criteria), _toConsumableArray(Array.isArray(criteria) ? criteria : [criteria]));
-  } else {
-    list.set(id, { id: id, enabled: true, criteria: Array.isArray(criteria) ? criteria : [criteria] });
-  }
-  return list.get(id);
+var list = {};
+
+var isShallowEqual = function isShallowEqual(obj1, obj2) {
+  var fuzzy = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
+
+  return Object.keys(obj1).every(function (key) {
+    if (fuzzy) {
+      return typeof obj1[key] === 'string' ? stringToRegExp(obj1[key]).test(obj2[key]) : obj1[key] === obj2[key];
+    }
+    return obj1[key] === obj2[key];
+  });
 };
 
-var remove = exports.remove = function remove(id, criteria) {
+var add = function add(id) {
+  var criteria = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
+
+  var feature = list[id];
+  if (feature) {
+    list[id].criteria = [].concat(_toConsumableArray(feature.criteria), _toConsumableArray(Array.isArray(criteria) ? criteria : [criteria]));
+  } else {
+    list[id] = { id: id, enabled: false, criteria: Array.isArray(criteria) ? criteria : [criteria] };
+  }
+  return list[id];
+};
+
+var remove = function remove(id, criteria) {
   if ((typeof criteria === 'undefined' ? 'undefined' : _typeof(criteria)) === 'object') {
-    var feature = list.get(id);
+    var feature = list[id];
     var length = feature.criteria.length;
     feature.criteria = feature.criteria.filter(function (set) {
-      var match = _filterObjects2.default.makeMatchFn(Object.keys(criteria));
-      return !match(criteria, set);
+      return !isShallowEqual(criteria, set, false);
     });
     return length !== feature.criteria.length;
   } else {
-    return list.delete(id);
+    delete list[id];
+    return true;
   }
 };
 
-var test = exports.test = function test(id) {
+var test = function test(id) {
   var state = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
   var callback = arguments[2];
 
-  var feature = list.get(id);
+  var feature = list[id];
   if (feature) {
     var _feature$enabled = feature.enabled;
     var enabled = _feature$enabled === undefined ? true : _feature$enabled;
@@ -57,13 +59,13 @@ var test = exports.test = function test(id) {
     var criteria = _feature$criteria === undefined ? [] : _feature$criteria;
 
     var matches = criteria.filter(function (set) {
-      var match = _filterObjects2.default.makeMatchFn(Object.keys(set), { regExpMatch: true });
-      return match(set, state);
+      return isShallowEqual(set, state);
     });
+    feature.enabled = !!matches.length;
     if (typeof callback === 'function') {
-      return callback(null, !!matches.length, Object.assign({}, feature, { enabled: !!matches.length, state: state, matches: matches }));
+      return callback(null, feature.enabled, Object.assign({}, feature, { state: state, matches: matches }));
     } else {
-      return !!matches.length;
+      return feature.enabled;
     }
   } else {
     if (typeof callback === 'function') {
@@ -73,3 +75,5 @@ var test = exports.test = function test(id) {
     }
   }
 };
+
+module.exports = { list: list, add: add, remove: remove, test: test };

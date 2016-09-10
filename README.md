@@ -118,8 +118,8 @@ This method will return a `true` if critera or feature were successfully removed
 The collection of features that have been added are exposed through the `.list` property (which is an ES6 `Map`). Once, you've tested each feature, you can report which ones are enabled:
 
 ```javascript
-let enabled = Array.from(features.list.values()).filter(feature => {
-  return feature.enabled;
+let enabled = Object.keys(features.list).filter(feature => {
+  return features.list[feature].enabled;
 });
 ```
 
