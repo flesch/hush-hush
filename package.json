@@ -1,20 +1,18 @@
 {
   "name": "hush-hush",
   "description": "Feature flagging for when you need to keep it hush-hush.",
-  "version": "1.0.0-alpha.3",
+  "version": "2.0.0",
   "author": "John Flesch <john@fles.ch>",
   "bugs": {
     "url": "https://github.com/flesch/hush-hush/issues"
   },
   "dependencies": {
-    "babel-polyfill": "^6.13.0",
+    "equalish": "^1.1.0",
     "string-to-regexp": "^0.1.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.14.0",
-    "babel-preset-es2015": "^6.14.0",
-    "browserify": "^13.1.0",
-    "uglify-js": "^2.7.3"
+    "babel-cli": "^6.18.0",
+    "babel-preset-es2015": "^6.18.0"
   },
   "homepage": "https://github.com/flesch/hush-hush#readme",
   "keywords": [
@@ -26,17 +24,13 @@
     "toggle"
   ],
   "license": "MIT",
-  "main": "dist/index.js",
+  "main": "lib/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/flesch/hush-hush.git"
   },
   "scripts": {
-    "bundle": "browserify dist/index.js --standalone features -o releases/$npm_package_name-$npm_package_version.js",
-    "compile": "babel index.js -o dist/index.js",
-    "latest": "cp releases/$npm_package_name-$npm_package_version.js releases/$npm_package_name-latest.js",
-    "postbundle": "uglifyjs releases/$npm_package_name-$npm_package_version.js -o releases/$npm_package_name-$npm_package_version.min.js",
-    "postlatest": "uglifyjs releases/$npm_package_name-latest.js -o releases/$npm_package_name-latest.min.js",
-    "release": "npm run compile && npm run bundle && npm run latest"
+    "compile": "babel index.js -o lib/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
